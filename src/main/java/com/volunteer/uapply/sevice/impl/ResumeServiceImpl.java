@@ -47,16 +47,18 @@ public class ResumeServiceImpl implements ResumeService {
 
     @Override
     public UniversalResponseBody apply(Resume resume, String firstChoice, String secondChoice) {
+
+        Resume resume1 = resumeMapper.getResumeByUserTel(resume.getOrganizationId(), resume.getUserTel());
+        if (resume1 != null) {
+            return new UniversalResponseBody(ResponseResultEnum.USER_HAVE_APPLY.getCode(), ResponseResultEnum.USER_HAVE_APPLY.getMsg());
+        }
+
         //如果用户的二志愿为空
         if (secondChoice == null) {
             secondChoice = emptyString;
         } else {
             interviewDataMapper.plusCrossCounts(firstChoice);
             interviewDataMapper.plusCrossCounts(secondChoice);
-        }
-        Resume resume1 = resumeMapper.getResumeByUserTel(resume.getOrganizationId(), resume.getUserTel());
-        if (resume1 != null) {
-            return new UniversalResponseBody(ResponseResultEnum.USER_HAVE_APPLY.getCode(), ResponseResultEnum.USER_HAVE_APPLY.getMsg());
         }
 
         //简历插入失败
