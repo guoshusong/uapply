@@ -1,7 +1,12 @@
 package com.volunteer.uapply.sevice;
 
+import com.volunteer.uapply.annotation.DepartmentLogin;
+import com.volunteer.uapply.pojo.InterviewScorePO;
 import com.volunteer.uapply.pojo.InterviewStatus;
+import com.volunteer.uapply.pojo.Resume;
+import com.volunteer.uapply.pojo.dto.IdArrayParam;
 import com.volunteer.uapply.utils.response.UniversalResponseBody;
+import org.springframework.web.bind.annotation.PostMapping;
 
 import java.util.List;
 
@@ -69,4 +74,12 @@ public interface InterviewStatusService {
      * @return
      */
     UniversalResponseBody changeRetestStatus(Integer[] userId, Integer organizationId, String departmentName, String status);
+
+    /**
+     * 捞回二面未面试
+     *
+     * @param idArrayParam
+     * @return
+     */
+    UniversalResponseBody<List<InterviewScorePO>> rollBackUnRetest(IdArrayParam idArrayParam);
 }

@@ -28,10 +28,12 @@ public enum ResponseResultEnum {
     USER_NO_PERMISSION(2003, "用户权限不足"),
 
     /**
-     * 报名错误
+     * 面试错误
      */
     USER_HAVE_APPLY(3000, "用户已经报名"),
     USER_HAVE_SECOND_CHECKED(3001, "用户已经在其他部门二面签到"),
+    USER_HAVE_INTERVIEW_SCORED(3002, "用户已经被评价"),
+
 
     /**
      * 部门错误

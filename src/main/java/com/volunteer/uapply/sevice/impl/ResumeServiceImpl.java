@@ -53,14 +53,6 @@ public class ResumeServiceImpl implements ResumeService {
             return new UniversalResponseBody(ResponseResultEnum.USER_HAVE_APPLY.getCode(), ResponseResultEnum.USER_HAVE_APPLY.getMsg());
         }
 
-        //如果用户的二志愿为空
-        if (secondChoice == null) {
-            secondChoice = emptyString;
-        } else {
-            interviewDataMapper.plusCrossCounts(firstChoice);
-            interviewDataMapper.plusCrossCounts(secondChoice);
-        }
-
         //简历插入失败
         if (resumeMapper.InsertResume(resume) < 0) {
             return new UniversalResponseBody(ResponseResultEnum.FAILED.getCode(), ResponseResultEnum.FAILED.getMsg());
@@ -78,6 +70,10 @@ public class ResumeServiceImpl implements ResumeService {
                 return new UniversalResponseBody(ResponseResultEnum.FAILED.getCode(), ResponseResultEnum.FAILED.getMsg());
             }
         }
+        interviewDataMapper.plusCrossCounts(firstChoice);
+        interviewDataMapper.plusCrossCounts(secondChoice);
+
+
         //根据性别，修改相应部门的面试数据
         if (resume.getUserSex().equals(man)) {
             interviewDataMapper.plusManCounts(firstChoice);
@@ -103,11 +99,12 @@ public class ResumeServiceImpl implements ResumeService {
 
     @Override
     public UniversalResponseBody scoreResume(InterviewScorePO interviewScorePO) {
+        InterviewStatus interviewStatus = interviewStatusMapper.getInterviewStatusById(interviewScorePO.getUserId(), interviewScorePO.getOrganizationId());
+
         if (interviewScoreMapper.insertInterviewScore(interviewScorePO) < 0) {
             return new UniversalResponseBody(ResponseResultEnum.FAILED.getCode(), ResponseResultEnum.FAILED.getMsg());
         }
-        //增加部门面试数据中的已经面试人数
-        interviewDataMapper.plusInterviewCounts(interviewScorePO.getDepartmentName());
+
        /*
         try{
             if (lock.tryLock(60, TimeUnit.MINUTES))
@@ -122,14 +119,28 @@ public class ResumeServiceImpl implements ResumeService {
             e.printStackTrace();
         }*/
 
-        InterviewStatus interviewStatus = interviewStatusMapper.getInterviewStatusById(interviewScorePO.getUserId(), interviewScorePO.getOrganizationId());
         if (interviewStatus == null) {
             return new UniversalResponseBody(ResponseResultEnum.PARAM_IS_INVALID.getCode(), ResponseResultEnum.PARAM_IS_INVALID.getMsg());
         }
+
         if (interviewStatus.getFirstChoice().equals(interviewScorePO.getDepartmentName())) {
-            interviewStatusMapper.updateFirstInterviewStatus(interviewScorePO.getUserId(), interviewScorePO.getOrganizationId(), InterviewStatusEnum.INTERVIEWED.getInterviewStatus());
+            if (interviewStatus.getFirstStatus().equals(InterviewStatusEnum.INTERVIEWED.getInterviewStatus())) {
+                //如果是已面试,说明已经进行过面试了
+                return new UniversalResponseBody(ResponseResultEnum.USER_HAVE_INTERVIEW_SCORED.getCode(), ResponseResultEnum.USER_HAVE_INTERVIEW_SCORED.getMsg());
+            } else {
+
+                interviewDataMapper.plusInterviewCounts(interviewScorePO.getDepartmentName());
+                interviewStatusMapper.updateFirstInterviewStatus(interviewScorePO.getUserId(), interviewScorePO.getOrganizationId(), InterviewStatusEnum.INTERVIEWED.getInterviewStatus());
+            }
         } else if (interviewStatus.getSecondChoice().equals(interviewScorePO.getDepartmentName())) {
-            interviewStatusMapper.updateSecondInterviewStatus(interviewScorePO.getUserId(), interviewScorePO.getOrganizationId(), InterviewStatusEnum.INTERVIEWED.getInterviewStatus());
+            if (interviewStatus.getSecondStatus().equals(InterviewStatusEnum.INTERVIEWED.getInterviewStatus())) {
+                //如果是已面试,说明已经进行过面试了
+                return new UniversalResponseBody(ResponseResultEnum.USER_HAVE_INTERVIEW_SCORED.getCode(), ResponseResultEnum.USER_HAVE_INTERVIEW_SCORED.getMsg());
+            } else {
+                //增加部门面试数据中的已经面试人数
+                interviewDataMapper.plusInterviewCounts(interviewScorePO.getDepartmentName());
+                interviewStatusMapper.updateSecondInterviewStatus(interviewScorePO.getUserId(), interviewScorePO.getOrganizationId(), InterviewStatusEnum.INTERVIEWED.getInterviewStatus());
+            }
         } else {
             return new UniversalResponseBody(ResponseResultEnum.FAILED.getCode(), ResponseResultEnum.FAILED.getMsg());
         }

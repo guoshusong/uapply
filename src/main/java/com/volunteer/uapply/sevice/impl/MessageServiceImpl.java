@@ -24,6 +24,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -62,7 +63,7 @@ public class MessageServiceImpl implements MessageService {
     /**
      * 此处在方法里面写死，因为阿里云规范不让出现面试、群号
      */
-    private static final String activity = "面试";
+    private static final String activity = "面基";
 
     private static final String Domain = "dysmsapi.aliyuncs.com";
 
@@ -95,7 +96,7 @@ public class MessageServiceImpl implements MessageService {
                     + "\"department\":\"" + aliyunFisrtInterviewParam.getDepartmentName() + "\","
                     + "\"telNo\":\"" + aliyunFisrtInterviewParam.getTelNo() + "\","
                     + "\"place\":\"" + aliyunFisrtInterviewParam.getPlace() + "\","
-                    + "\"activity\":\"" + activity + "\","
+                    + "\"activity\":\"" + "一面" + "\","
                     + "}");
             CommonResponse commonResponse = client.getCommonResponse(request);
             AliyunResponseInfo aliyunResponseInfo = JSON.parseObject(commonResponse.getData(), AliyunResponseInfo.class);
@@ -103,7 +104,6 @@ public class MessageServiceImpl implements MessageService {
 
             } else {
                 log.error(aliyunResponseInfo.toString() + "一面短信发送失败" + user.toString());
-                return new UniversalResponseBody<AliyunResponseInfo>(ResponseResultEnum.PARAM_IS_INVALID.getCode(), ResponseResultEnum.PARAM_IS_INVALID.getMsg(), aliyunResponseInfo);
             }
         }
         return new UniversalResponseBody<AliyunResponseInfo>(ResponseResultEnum.SUCCESS.getCode(), ResponseResultEnum.SUCCESS.getMsg());
@@ -132,14 +132,13 @@ public class MessageServiceImpl implements MessageService {
                     + "\"organizationName\":\"" + aliyunSecondInterviewParam.getOrganizationName() + "\","
                     + "\"telNo\":\"" + aliyunSecondInterviewParam.getTelNo() + "\","
                     + "\"place\":\"" + aliyunSecondInterviewParam.getPlace() + "\","
-                    + "\"activity\":\"" + activity + "\","
+                    + "\"activity\":\"" + "二面" + "\","
                     + "}");
             CommonResponse commonResponse = client.getCommonResponse(request);
             AliyunResponseInfo aliyunResponseInfo = JSON.parseObject(commonResponse.getData(), AliyunResponseInfo.class);
             if (aliyunResponseInfo.getCode().equals(SuccessCode)) {
             } else {
                 log.error(aliyunResponseInfo.toString() + "二面短信发送失败" + user.toString());
-                return new UniversalResponseBody<AliyunResponseInfo>(ResponseResultEnum.PARAM_IS_INVALID.getCode(), ResponseResultEnum.PARAM_IS_INVALID.getMsg(), aliyunResponseInfo);
             }
         }
         return new UniversalResponseBody<AliyunResponseInfo>(ResponseResultEnum.SUCCESS.getCode(), ResponseResultEnum.SUCCESS.getMsg());
@@ -149,6 +148,7 @@ public class MessageServiceImpl implements MessageService {
     public UniversalResponseBody<AliyunResponseInfo> sendEnrollInterviewMessage(AliyunEnrollParam aliyunEnrollParam) throws ClientException {
         IClientProfile profile = DefaultProfile.getProfile("cn-hangzhou", accessKeyId, accessKeySecret);
         List<User> userList = userMessageMapper.getUsersByUserId(aliyunEnrollParam.getUserId());
+        //未成功名单
         for (User user :
                 userList) {
             IAcsClient client = new DefaultAcsClient(profile);
@@ -164,14 +164,13 @@ public class MessageServiceImpl implements MessageService {
             request.putQueryParameter("TemplateParam", "{\"name\":\"" + user.getUserName() + "\","
                     + "\"organizationName\":\"" + aliyunEnrollParam.getOrganizationName() + "\","
                     + "\"department\":\"" + aliyunEnrollParam.getDepartmentName() + "\","
-                    + "\"secret\":\"" + "群号" + aliyunEnrollParam.getSecret() + "\","
+                    + "\"secret\":\"" + "扣扣群号" + aliyunEnrollParam.getSecret() + "\","
                     + "}");
             CommonResponse commonResponse = client.getCommonResponse(request);
             AliyunResponseInfo aliyunResponseInfo = JSON.parseObject(commonResponse.getData(), AliyunResponseInfo.class);
             if (aliyunResponseInfo.getCode().equals(SuccessCode)) {
             } else {
                 log.error(aliyunResponseInfo.toString() + "录取短信发送失败" + user.toString());
-                return new UniversalResponseBody<AliyunResponseInfo>(ResponseResultEnum.PARAM_IS_INVALID.getCode(), ResponseResultEnum.PARAM_IS_INVALID.getMsg(), aliyunResponseInfo);
             }
         }
         return new UniversalResponseBody<AliyunResponseInfo>(ResponseResultEnum.SUCCESS.getCode(), ResponseResultEnum.SUCCESS.getMsg());

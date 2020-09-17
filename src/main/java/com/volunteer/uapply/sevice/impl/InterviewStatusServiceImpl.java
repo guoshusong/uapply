@@ -1,10 +1,8 @@
 package com.volunteer.uapply.sevice.impl;
 
-import com.volunteer.uapply.mapper.DepartmentMemberMapper;
-import com.volunteer.uapply.mapper.InterviewStatusMapper;
-import com.volunteer.uapply.pojo.Department;
-import com.volunteer.uapply.pojo.DepartmentMember;
-import com.volunteer.uapply.pojo.InterviewStatus;
+import com.volunteer.uapply.mapper.*;
+import com.volunteer.uapply.pojo.*;
+import com.volunteer.uapply.pojo.dto.IdArrayParam;
 import com.volunteer.uapply.sevice.InterviewStatusService;
 import com.volunteer.uapply.utils.enums.AuthorityIdEnum;
 import com.volunteer.uapply.utils.enums.InterviewStatusEnum;
@@ -14,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -29,6 +28,8 @@ public class InterviewStatusServiceImpl implements InterviewStatusService {
     private InterviewStatusMapper interviewStatusMapper;
     @Resource
     private DepartmentMemberMapper departmentMemberMapper;
+    @Resource
+    private InterviewScoreMapper interviewScoreMapper;
 
     @Override
     public UniversalResponseBody<List<InterviewStatus>> getInterviewStatus(Integer userId) {
@@ -46,21 +47,7 @@ public class InterviewStatusServiceImpl implements InterviewStatusService {
         DepartmentMember departmentMember;
         for (Integer temp :
                 userId) {
-            interviewStatus = interviewStatusMapper.getInterviewStatusById(temp, organizationId);
-            /**
-             * 有可能是从淘汰名单录取为成员，所以此处应当判断成员的该部门面试状态是否淘汰，若为淘汰则更新为通过
-             */
-            //一志愿为该部门
-            if (interviewStatus.getFirstChoice().equals(departmentName) && interviewStatus.getFirstStatus().equals(InterviewStatusEnum.INTERVIEW_ELIMINATE.getInterviewStatus())) {
-                interviewStatusMapper.updateFirstInterviewStatus(temp, organizationId, InterviewStatusEnum.INTERVIEW_PASS.getInterviewStatus());
-            } else if (interviewStatus.getSecondChoice().equals(departmentName) && interviewStatus.getFirstStatus().equals(InterviewStatusEnum.INTERVIEW_ELIMINATE.getInterviewStatus())) {
-                //二志愿为该部门
-                interviewStatusMapper.updateSecondInterviewStatus(temp, organizationId, InterviewStatusEnum.INTERVIEW_PASS.getInterviewStatus());
-            } else {
-                return new UniversalResponseBody(ResponseResultEnum.PARAM_IS_INVALID.getCode(), ResponseResultEnum.PARAM_IS_INVALID.getMsg());
-            }
-
-            //将复试状态改为通过
+            //复试状态改为通过
             interviewStatusMapper.updateRetestStatus(temp, organizationId, departmentName, InterviewStatusEnum.INTERVIEW_PASS.getInterviewStatus());
             /**
              *判断之前已经存在于该部门中
@@ -142,8 +129,42 @@ public class InterviewStatusServiceImpl implements InterviewStatusService {
             } else {
                 return new UniversalResponseBody(ResponseResultEnum.PARAM_IS_INVALID.getCode(), ResponseResultEnum.PARAM_IS_INVALID.getMsg());
             }
-
         }
         return new UniversalResponseBody<Department>(ResponseResultEnum.SUCCESS.getCode(), ResponseResultEnum.SUCCESS.getMsg());
+    }
+
+    @Override
+    public UniversalResponseBody<List<InterviewScorePO>> rollBackUnRetest(IdArrayParam idArrayParam) {
+        //将成员的录取状态回滚为二面未面试
+        InterviewStatus interviewStatus = null;
+        Integer organizationId = idArrayParam.getOrganizationId();
+        String departmentName = idArrayParam.getDepartmentName();
+        List<Integer> failedUserId = new LinkedList<>();
+        for (Integer userId :
+                idArrayParam.getUserId()) {
+            //获取面试状态
+            interviewStatus = interviewStatusMapper.getInterviewStatusById(userId, organizationId);
+            //如果还未选择二面部门说明是一面淘汰
+            if (interviewStatus.getRetestChoice() == null) {
+                if (interviewStatus.getFirstChoice().equals(departmentName)) {
+                    interviewStatusMapper.updateFirstInterviewStatus(userId, organizationId, InterviewStatusEnum.INTERVIEW_PASS.getInterviewStatus());
+                    interviewStatusMapper.updateRetestStatus(userId, organizationId, departmentName, InterviewStatusEnum.NO_INTERVIEW.getInterviewStatus());
+                } else if (interviewStatus.getSecondChoice() != null && interviewStatus.getSecondChoice().equals(departmentName)) {
+                    //二志愿为该部门
+                    interviewStatusMapper.updateSecondInterviewStatus(userId, organizationId, InterviewStatusEnum.INTERVIEW_PASS.getInterviewStatus());
+                    interviewStatusMapper.updateRetestStatus(userId, organizationId, departmentName, InterviewStatusEnum.NO_INTERVIEW.getInterviewStatus());
+                }
+            } else {
+                //说明已经选择了二面部门
+                if (interviewStatus.getRetestChoice().equals(departmentName)) {
+                    //二面部门与本部门相同
+                    interviewStatusMapper.updateRetestStatus(userId, organizationId, departmentName, InterviewStatusEnum.NO_INTERVIEW.getInterviewStatus());
+                } else {
+                    failedUserId.add(userId);
+                }
+            }
+        }
+        return new UniversalResponseBody<List<InterviewScorePO>>(ResponseResultEnum.SUCCESS.getCode(), ResponseResultEnum.SUCCESS.getMsg(),
+                interviewScoreMapper.getInterviewScoresByUserId(failedUserId, organizationId));
     }
 }

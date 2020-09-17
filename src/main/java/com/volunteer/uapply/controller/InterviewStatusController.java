@@ -2,7 +2,9 @@ package com.volunteer.uapply.controller;
 
 import com.volunteer.uapply.annotation.DepartmentLogin;
 import com.volunteer.uapply.annotation.UserLogin;
+import com.volunteer.uapply.pojo.InterviewScorePO;
 import com.volunteer.uapply.pojo.InterviewStatus;
+import com.volunteer.uapply.pojo.Resume;
 import com.volunteer.uapply.pojo.dto.IdArrayParam;
 import com.volunteer.uapply.sevice.InterviewStatusService;
 import com.volunteer.uapply.utils.enums.InterviewStatusEnum;
@@ -136,5 +138,18 @@ public class InterviewStatusController {
     @PostMapping("/cancel/enroll")
     public UniversalResponseBody cancelEnroll(IdArrayParam idArrayParam) {
         return interviewStatusService.cancelEnroll(idArrayParam.getUserId(), idArrayParam.getDepartmentName(), idArrayParam.getDepartmentId(), idArrayParam.getOrganizationId());
+    }
+
+    /**
+     * 捞回二面未面试
+     *
+     * @param idArrayParam
+     * @return
+     * @apiNote 此处无论如何都会返回成功, 但是会返回失败的面试评价的集合，注意只有当二面再其他部门已经有面试情况了才会失败
+     */
+    @DepartmentLogin
+    @PostMapping("/back/unretest")
+    public UniversalResponseBody<List<InterviewScorePO>> rollBackUnRetest(IdArrayParam idArrayParam) {
+        return interviewStatusService.rollBackUnRetest(idArrayParam);
     }
 }
