@@ -87,7 +87,6 @@ public class InterviewDataServiceImpl implements InterviewDataService {
         //List<Integer> userIdList = interviewStatusMapper.getUserIdByRetestStatus(organizationId, departmentName, InterviewStatusEnum.NO_INTERVIEW.getInterviewStatus());
         //如果无返回结果
         List<Integer> userIdList = interviewStatusMapper.getUnSecondInterview(organizationId, departmentName);
-
         if (userIdList == null || userIdList.isEmpty()) {
             return new UniversalResponseBody(ResponseResultEnum.PARAM_IS_INVALID.getCode(), ResponseResultEnum.PARAM_IS_INVALID.getMsg());
         }
@@ -99,6 +98,7 @@ public class InterviewDataServiceImpl implements InterviewDataService {
     @Override
     public UniversalResponseBody<PageInfo<InterviewScorePO>> Retested(Integer organizationId, String departmentName, Integer pageNum, Integer pageSize) {
         List<Integer> userIdList = interviewStatusMapper.getUserIdByRetestStatus(organizationId, departmentName, InterviewStatusEnum.INTERVIEWED.getInterviewStatus());
+
         //如果无返回结果
         if (userIdList == null || userIdList.isEmpty()) {
             return new UniversalResponseBody(ResponseResultEnum.PARAM_IS_INVALID.getCode(), ResponseResultEnum.PARAM_IS_INVALID.getMsg());

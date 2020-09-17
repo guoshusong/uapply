@@ -80,7 +80,7 @@ public interface InterviewStatusMapper {
     List<Integer> getUserIdsByFirstStatus(Integer organizationId, String departmentName, String status);
 
     /**
-     * 获取整个部门中二面对应状态的成员Id
+     * 获取整个组织中二面对应状态的成员Id
      *
      * @param organizationId
      * @param departmentName
@@ -88,7 +88,6 @@ public interface InterviewStatusMapper {
      * @return
      */
     List<Integer> getUserIdByRetestStatus(Integer organizationId, String departmentName, String status);
-
 
     /**
      * 根据用户

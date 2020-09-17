@@ -12,8 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author 郭树耸
@@ -139,32 +138,45 @@ public class InterviewStatusServiceImpl implements InterviewStatusService {
         InterviewStatus interviewStatus = null;
         Integer organizationId = idArrayParam.getOrganizationId();
         String departmentName = idArrayParam.getDepartmentName();
-        List<Integer> failedUserId = new LinkedList<>();
-        for (Integer userId :
-                idArrayParam.getUserId()) {
+        List<Integer> userIdList = new ArrayList<>(Arrays.asList(idArrayParam.getUserId()));
+        Iterator<Integer> it = userIdList.iterator();
+        while (it.hasNext()) {
+            Integer userId = it.next();
             //获取面试状态
             interviewStatus = interviewStatusMapper.getInterviewStatusById(userId, organizationId);
             //如果还未选择二面部门说明是一面淘汰
             if (interviewStatus.getRetestChoice() == null) {
                 if (interviewStatus.getFirstChoice().equals(departmentName)) {
                     interviewStatusMapper.updateFirstInterviewStatus(userId, organizationId, InterviewStatusEnum.INTERVIEW_PASS.getInterviewStatus());
+                    System.out.println(userId + organizationId + InterviewStatusEnum.INTERVIEW_PASS.getInterviewStatus());
                     interviewStatusMapper.updateRetestStatus(userId, organizationId, departmentName, InterviewStatusEnum.NO_INTERVIEW.getInterviewStatus());
+                    it.remove();
                 } else if (interviewStatus.getSecondChoice() != null && interviewStatus.getSecondChoice().equals(departmentName)) {
                     //二志愿为该部门
                     interviewStatusMapper.updateSecondInterviewStatus(userId, organizationId, InterviewStatusEnum.INTERVIEW_PASS.getInterviewStatus());
                     interviewStatusMapper.updateRetestStatus(userId, organizationId, departmentName, InterviewStatusEnum.NO_INTERVIEW.getInterviewStatus());
+                    it.remove();
                 }
             } else {
                 //说明已经选择了二面部门
                 if (interviewStatus.getRetestChoice().equals(departmentName)) {
                     //二面部门与本部门相同
                     interviewStatusMapper.updateRetestStatus(userId, organizationId, departmentName, InterviewStatusEnum.NO_INTERVIEW.getInterviewStatus());
+                    it.remove();
                 } else {
-                    failedUserId.add(userId);
+
                 }
             }
         }
-        return new UniversalResponseBody<List<InterviewScorePO>>(ResponseResultEnum.SUCCESS.getCode(), ResponseResultEnum.SUCCESS.getMsg(),
-                interviewScoreMapper.getInterviewScoresByUserId(failedUserId, organizationId));
+        if (userIdList.isEmpty()) {
+            //mybatisb遍历null
+            //由于接口参数类型为List，而在mybatis中foreach遍历order对象为null，故此在order.orderId取值，得到对象参数无值，
+            // jdbc抛出SQLSyntaxErrorException。结论：mybatis不接受对象为null取值。
+            return new UniversalResponseBody<List<InterviewScorePO>>(ResponseResultEnum.SUCCESS.getCode(), ResponseResultEnum.SUCCESS.getMsg());
+        } else {
+            return new UniversalResponseBody<List<InterviewScorePO>>(ResponseResultEnum.SUCCESS.getCode(), ResponseResultEnum.SUCCESS.getMsg(),
+                    interviewScoreMapper.getDepartmentInterviewScore(userIdList, organizationId, departmentName));
+        }
+
     }
 }
